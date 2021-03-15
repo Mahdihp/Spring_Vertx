@@ -1,18 +1,15 @@
-package com.mahdi.vertx.entity;
+package com.mahdi.vertx.entity.users;
 
 import com.mahdi.vertx.BaseVerticle;
+import com.mahdi.vertx.util.Constance;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,25 +22,27 @@ import org.springframework.stereotype.Component;
 @Component
 public class UsersVerticle extends BaseVerticle {
     private static final Logger logger = LoggerFactory.getLogger(UsersVerticle.class);
-
+    private final Router router;
     private final UsersService usersService;
 
-    public UsersVerticle(UsersService usersService) {
+    public UsersVerticle(Router router, UsersService usersService) {
+        this.router = router;
         this.usersService = usersService;
-        logger.info("UsersVerticle start");
-
     }
+
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         super.start(startPromise);
-        Router router = getRouter();
-        settingAndStartServer(router);
+        Router newsRouter = getRouter();
+        newsRouter.mountSubRouter(Constance.API_VER,newsRouter);
+        settingAndStartServer(newsRouter);
+
+
     }
 
     private Router getRouter() {
-        Router router = Router.router(vertx);
-        router.get("/ping").handler(usersService::getPing);
+        router.get(Constance.API_USERS).handler(usersService::getPing);
         return router;
     }
 
@@ -60,7 +59,7 @@ public class UsersVerticle extends BaseVerticle {
 
                 String host = jsonObject.getString("host");
                 int port = jsonObject.getInteger("port");
-                createHttpServer(router, host, port);
+                createHttpServer(router, host, port, UsersVerticle.class.getSimpleName());
             }
         });
     }

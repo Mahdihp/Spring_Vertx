@@ -2,9 +2,12 @@ package com.mahdi.vertx;
 
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.CorsHandler;
 import org.slf4j.Logger;
@@ -17,27 +20,22 @@ import java.util.Set;
 public abstract class BaseVerticle extends AbstractVerticle {
   private static final Logger logger = LoggerFactory.getLogger(BaseVerticle.class);
 
-
-  /**
-   * Create an HTTP server for the REST service.
-   * @param router router instance
-   * @param host   server host
-   * @param port   server port
-   * @return asynchronous result
-   */
-  protected void createHttpServer(Router router, String host, int port) {
+  protected void createHttpServer(Router router, String host, int port,String verticelName) {
     vertx.createHttpServer()
       .requestHandler(router)
       .listen(port, host)
       .onComplete(http -> {
         if (http.succeeded()) {
-          logger.info("BaseVerticle HTTP Server Started On Port: " + port);
+
+          logger.info(verticelName+" HTTP Server Started On Port: " + port);
         } else {
-          logger.info("BaseVerticle Fail HTTP Server: " + port);
+          logger.error(verticelName+" Fail HTTP Server: " + port);
         }
       })
-    .onFailure(throwable -> logger.info("BaseVerticle Fail HTTP Server: " + throwable.getMessage()));
-
+    .onFailure(throwable -> logger.error(verticelName+" Fail HTTP Server: " + throwable.getMessage()));
+    for (Route route : router.getRoutes()) {
+      logger.info(route.getPath());
+    }
   }
 
   protected void enableCorsSupport(Router router) {
@@ -57,4 +55,5 @@ public abstract class BaseVerticle extends AbstractVerticle {
       .allowedMethod(HttpMethod.PUT)
     );
   }
+
 }

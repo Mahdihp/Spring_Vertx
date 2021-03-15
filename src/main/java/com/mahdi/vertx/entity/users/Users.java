@@ -1,4 +1,4 @@
-package com.mahdi.vertx.entity;
+package com.mahdi.vertx.entity.users;
 
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;

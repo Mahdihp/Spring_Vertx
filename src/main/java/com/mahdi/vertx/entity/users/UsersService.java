@@ -1,4 +1,4 @@
-package com.mahdi.vertx.entity;
+package com.mahdi.vertx.entity.users;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.ext.web.RoutingContext;
