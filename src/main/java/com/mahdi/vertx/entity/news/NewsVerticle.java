@@ -6,6 +6,7 @@ import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -23,10 +24,11 @@ import org.springframework.stereotype.Component;
 public class NewsVerticle extends BaseVerticle {
     private final Router router;
     private final NewsService newsService;
-
-    public NewsVerticle(Router router, NewsService newsService) {
+    private final Future<JsonObject> jsonObjectFuture;
+    public NewsVerticle(Router router, NewsService newsService, Future<JsonObject> jsonObjectFuture) {
         this.router = router;
         this.newsService = newsService;
+        this.jsonObjectFuture = jsonObjectFuture;
     }
 
 
@@ -44,18 +46,12 @@ public class NewsVerticle extends BaseVerticle {
     }
 
     private void settingAndStartServer(Router router) {
-        JsonObject jsonObject = new JsonObject();
-        ConfigStoreOptions file = new ConfigStoreOptions().setType("file").setConfig(new JsonObject().put("path", "application.json"));
-        ConfigRetriever retriever = ConfigRetriever.create(vertx, new ConfigRetrieverOptions().addStore(file));
-        retriever.getConfig(new Handler<AsyncResult<JsonObject>>() {
+        jsonObjectFuture.onComplete(new Handler<AsyncResult<JsonObject>>() {
             @Override
-            public void handle(AsyncResult<JsonObject> conf) {
-                JsonObject datasourceConfig = conf.result().getJsonObject("discovery");
-                jsonObject.put("host", datasourceConfig.getString("host"));
-                jsonObject.put("port", datasourceConfig.getInteger("port"));
-
-                String host = jsonObject.getString("host");
-                int port = jsonObject.getInteger("port");
+            public void handle(AsyncResult<JsonObject> event) {
+                JsonObject datasourceConfig = event.result().getJsonObject("discovery");
+                String host = datasourceConfig.getString("host");
+                int port = datasourceConfig.getInteger("port");
                 createHttpServer(router, host, port, NewsVerticle.class.getSimpleName());
             }
         });

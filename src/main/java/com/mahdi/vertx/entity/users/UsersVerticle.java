@@ -24,10 +24,12 @@ public class UsersVerticle extends BaseVerticle {
     private static final Logger logger = LoggerFactory.getLogger(UsersVerticle.class);
     private final Router router;
     private final UsersService usersService;
+    private final Future<JsonObject> jsonObjectFuture;
 
-    public UsersVerticle(Router router, UsersService usersService) {
+    public UsersVerticle(Router router, UsersService usersService, Future<JsonObject> jsonObjectFuture) {
         this.router = router;
         this.usersService = usersService;
+        this.jsonObjectFuture = jsonObjectFuture;
     }
 
 
@@ -35,10 +37,8 @@ public class UsersVerticle extends BaseVerticle {
     public void start(Promise<Void> startPromise) throws Exception {
         super.start(startPromise);
         Router newsRouter = getRouter();
-        newsRouter.mountSubRouter(Constance.API_VER,newsRouter);
+        newsRouter.mountSubRouter(Constance.API_VER, newsRouter);
         settingAndStartServer(newsRouter);
-
-
     }
 
     private Router getRouter() {
@@ -47,18 +47,12 @@ public class UsersVerticle extends BaseVerticle {
     }
 
     private void settingAndStartServer(Router router) {
-        JsonObject jsonObject = new JsonObject();
-        ConfigStoreOptions file = new ConfigStoreOptions().setType("file").setConfig(new JsonObject().put("path", "application.json"));
-        ConfigRetriever retriever = ConfigRetriever.create(vertx, new ConfigRetrieverOptions().addStore(file));
-        retriever.getConfig(new Handler<AsyncResult<JsonObject>>() {
+        jsonObjectFuture.onComplete(new Handler<AsyncResult<JsonObject>>() {
             @Override
-            public void handle(AsyncResult<JsonObject> conf) {
-                JsonObject datasourceConfig = conf.result().getJsonObject("discovery");
-                jsonObject.put("host", datasourceConfig.getString("host"));
-                jsonObject.put("port", datasourceConfig.getInteger("port"));
-
-                String host = jsonObject.getString("host");
-                int port = jsonObject.getInteger("port");
+            public void handle(AsyncResult<JsonObject> event) {
+                JsonObject datasourceConfig = event.result().getJsonObject("discovery");
+                String host = datasourceConfig.getString("host");
+                int port = datasourceConfig.getInteger("port");
                 createHttpServer(router, host, port, UsersVerticle.class.getSimpleName());
             }
         });
